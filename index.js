@@ -4,20 +4,21 @@ const app = express();
 const port = process.env.PORT || 3000;
 const mongoose = require('mongoose');
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
 const connectDB = require('./config/db');
 connectDB();
 
-// Routes
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const vehicleRoutes = require('./routes/vehicleRoutes');
+const reservationRoutes = require('./routes/reservationRoutes'); 
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/vehicles', vehicleRoutes);
+app.use('/api/reservations', reservationRoutes); 
 
 // Health check
 app.get('/api/health', (req, res) => {
