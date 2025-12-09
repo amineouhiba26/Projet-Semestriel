@@ -1,75 +1,44 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
+// 🔒 Vérifie le token
 const protect = async (req, res, next) => {
-  let token;
+  const authHeader = req.headers.authorization;
 
-  if (req.headers.authorization?.startsWith('Bearer')) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      // Get user from token and attach to request
-      req.user = await User.findById(decoded.userId).select('-password');
-      
-      if (!req.user) {
-        return res.status(401).json({ message: 'Utilisateur non trouvé' });
-      }
-
-      return next();
-    } catch (error) {
-      console.error('JWT verification failed:', error);
-      return res.status(401).json({ message: 'Token invalide' });
-    }
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Accès refusé, token manquant" });
   }
 
-  if (!token) {
-    return res.status(401).json({ message: 'Pas de token, accès refusé' });
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    req.user = await User.findById(decoded.userId).select("-password");
+    if (!req.user) return res.status(401).json({ message: "Utilisateur introuvable" });
+
+    next(); // ✔ ici ok
+
+  } catch (e) {
+    return res.status(401).json({ message: "Token invalide" });
   }
 };
 
-// Middleware to check if user has specific role(s)
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Non authentifié' });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        message: `Accès refusé. Rôle requis: ${roles.join(' ou ')}` 
-      });
-    }
-
-    next();
-  };
-};
-
-// Middleware to check if user is admin
+// 🔓 Vérifie le rôle Admin
 const isAdmin = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Non authentifié' });
-  }
+  if (!req.user) return res.status(401).json({ message: "Non authentifié" });
+  if (req.user.role !== "ADMIN")
+    return res.status(403).json({ message: "Accès refusé — Admin uniquement" });
 
-  if (req.user.role !== 'ADMIN') {
-    return res.status(403).json({ message: 'Accès refusé. Administrateur requis.' });
-  }
-
-  next();
+  next(); // ✔ ok
 };
 
-// Middleware to check if user is client
+// 🔓 Vérifie Client
 const isClient = (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Non authentifié' });
-  }
+  if (!req.user) return res.status(401).json({ message: "Non authentifié" });
+  if (req.user.role !== "CLIENT")
+    return res.status(403).json({ message: "Accès refusé — Client uniquement" });
 
-  if (req.user.role !== 'CLIENT') {
-    return res.status(403).json({ message: 'Accès refusé. Client requis.' });
-  }
-
-  next();
+  next(); // ✔ ok
 };
 
-module.exports = { protect, authorize, isAdmin, isClient };
+module.exports = { protect, isAdmin, isClient };
