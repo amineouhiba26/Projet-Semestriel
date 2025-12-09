@@ -7,25 +7,34 @@ const mongoose = require('mongoose');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ===================== DB =====================
 const connectDB = require('./config/db');
 connectDB();
 
+// ================== ROUTES ====================
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const vehicleRoutes = require('./routes/vehicleRoutes');
-const reservationRoutes = require('./routes/reservationRoutes'); 
+const reservationRoutes = require('./routes/reservationRoutes');
 
+// 🆕 MAINTENANCE
+const maintenanceRoutes = require('./routes/maintenanceRoutes');
+
+// =============== USE ROUTES ===================
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/vehicles', vehicleRoutes);
-app.use('/api/reservations', reservationRoutes); 
+app.use('/api/reservations', reservationRoutes);
 
-// Health check
+// 🆕 MAINTENANCE ENDPOINT
+app.use('/api/maintenance', maintenanceRoutes);
+
+// ================= HEALTH CHECK ===============
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Error handling middleware
+// ============= GLOBAL ERROR HANDLER ==========
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ 
@@ -34,6 +43,7 @@ app.use((err, req, res, next) => {
   });
 });
 
+// ================== RUN SERVER ================
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
